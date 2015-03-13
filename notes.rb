@@ -1,3 +1,22 @@
+# Allows caching multiple methods
+module Memoize
+
+  def memoize(method_name)
+    orig_method = 'orig_' + method_name.to_s
+    alias_method orig_method, method_name
+
+    cache ||= Hash.new { |h,k| h[k] = {} }
+
+    define_method(method_name) do |*args|
+      return cache[method_name][args] if cache[method_name].has_key?(args)
+      cache[method_name][args] = self.send(orig_method, *args)
+    end
+  end
+
+end
+
+# ===========================================================================
+
 # [0 1 1 2 3 5 8 13 21 ...
 
 # f(i) = 0               if i == 0
@@ -31,28 +50,10 @@ class Fib
   end
   memoize :compute
 
-  def slow(a, b, c)
-    # does something stupid and slow with a, b, and c
-    nil
+  def slow_compute(i)
+    return i if i < 2
+    slow_compute(i-1) + slow_compute(i-2)
   end
-  memoize :slow
-
-  #   def iter_compute(i)
-#     results = [0,1]
-#     return results[i] if i <= 1
-#     a = 1
-#     b = 1
-#     (i-2).times do
-#       new = a + b
-#       a = b
-#       b = new
-#     end
-#     b
-#   end
-
-#   def compute(i, results=[0, 1])
-#     results[i] ||= compute(i-1, results) + compute(i-2, results)
-#   end
 end
 
 p Fib.new.compute(256)
